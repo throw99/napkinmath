@@ -55,7 +55,7 @@ export default function SheetSelector(props: Props) {
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [menu, setMenu] = useState<{ id: string; x: number; y: number } | null>(null);
   const [dialog, setDialog] = useState<{ type: "emoji" | "delete"; id: string } | null>(null);
-  const emojiActionRef = useRef<HTMLButtonElement>(null);
+  const menuRowRef = useRef<HTMLElement | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const longPressRef = useRef<number | null>(null);
   const longPressFiredRef = useRef(false);
@@ -78,7 +78,8 @@ export default function SheetSelector(props: Props) {
     if (dialog) dialogRef.current?.showModal();
   }, [dialog]);
 
-  function openMenu(id: string, x: number, y: number) {
+  function openMenu(id: string, x: number, y: number, row: HTMLElement | null) {
+    menuRowRef.current = row;
     setMenu({ id, x, y });
     setRenamingId(null);
   }
@@ -156,8 +157,9 @@ export default function SheetSelector(props: Props) {
           return (
             <div
               key={s.id}
+              tabIndex={-1}
               className={
-                "group mb-1 flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2" +
+                "group mb-1 flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--nm-accent)]" +
                 (isActive ? "" : " hover:bg-black/5")
               }
               style={{
@@ -178,15 +180,16 @@ export default function SheetSelector(props: Props) {
               }}
               onContextMenu={(e) => {
                 e.preventDefault();
-                openMenu(s.id, e.clientX, e.clientY);
+                openMenu(s.id, e.clientX, e.clientY, e.currentTarget);
               }}
               onPointerDown={(e) => {
                 if (e.pointerType !== "touch") return;
                 longPressFiredRef.current = false;
                 if (longPressRef.current) window.clearTimeout(longPressRef.current);
+                const row = e.currentTarget;
                 longPressRef.current = window.setTimeout(() => {
                   longPressFiredRef.current = true;
-                  openMenu(s.id, e.clientX, e.clientY);
+                  openMenu(s.id, e.clientX, e.clientY, row);
                 }, 520);
               }}
               onPointerUp={() => {
@@ -237,14 +240,14 @@ export default function SheetSelector(props: Props) {
               {!collapsed && (
                 <button
                   type="button"
-                  className="nm-btn hidden h-7 w-7 items-center justify-center rounded-md border text-xs group-hover:inline-flex"
+                  className="nm-btn hidden h-7 w-7 items-center justify-center rounded-md border text-xs group-hover:inline-flex group-focus-within:inline-flex"
                   style={{
                     borderColor: isActive ? "rgba(255,255,255,0.35)" : "var(--nm-border)",
                     color: isActive ? "#fff" : "var(--nm-text-muted)",
                   }}
                   onClick={(e) => {
                     e.stopPropagation();
-                    openMenu(s.id, (e as any).clientX ?? 0, (e as any).clientY ?? 0);
+                    openMenu(s.id, e.clientX, e.clientY, e.currentTarget.closest(".group"));
                   }}
                   aria-label="Sheet actions"
                 >
@@ -304,8 +307,8 @@ export default function SheetSelector(props: Props) {
             <button
               type="button"
               className="nm-btn flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-black/5"
-              ref={emojiActionRef}
               onClick={() => {
+                setMenu(null);
                 setDialog({ type: "emoji", id: menu.id });
               }}
             >
@@ -338,11 +341,13 @@ export default function SheetSelector(props: Props) {
           ref={dialogRef}
           onKeyDown={(e) => { if (e.key === "Escape") e.stopPropagation(); }}
           onClose={() => {
-            if (dialog.type === "emoji") requestAnimationFrame(() => emojiActionRef.current?.focus());
+            if (dialog.type === "emoji") {
+              requestAnimationFrame(() => menuRowRef.current?.focus());
+            }
             setDialog(null);
           }}
           aria-labelledby="sheet-dialog-title"
-          className="w-[min(90vw,24rem)] rounded-xl border p-5 shadow-xl backdrop:bg-black/50"
+          className={(dialog.type === "emoji" ? "w-[min(92vw,30rem)]" : "w-[min(90vw,24rem)]") + " max-h-[calc(100dvh-1rem)] rounded-xl border p-5 shadow-xl backdrop:bg-black/50"}
           style={{ background: "var(--nm-bg-card)", borderColor: "var(--nm-border)", color: "var(--nm-text)" }}
         >
           <form onSubmit={(e) => {
@@ -360,7 +365,7 @@ export default function SheetSelector(props: Props) {
                 <Suspense fallback={<p role="status">Loading emoji…</p>}>
                   <EmojiPicker
                     width="100%"
-                    height={360}
+                    height="min(440px, 60vh)"
                     emojiStyle="native"
                     autoFocusSearch
                     previewConfig={{ showPreview: false }}
