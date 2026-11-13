@@ -550,6 +550,14 @@
   }
 }
 
+/* Text-height caret drawn over the textarea in WebKit (see DRAW_CARET in Editor.tsx) */
+.nm-drawn-caret {
+  animation: nm-caret-blink 1s steps(1) 0.5s infinite;
+}
+@keyframes nm-caret-blink {
+  50% { opacity: 0; }
+}
+
 /* Keep textarea/pre overlay perfectly aligned */
 .nm-editor {
   tab-size: 2;
