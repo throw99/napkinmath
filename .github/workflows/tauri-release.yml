@@ -1,0 +1,48 @@
+name: Tauri release
+
+# Build the Linux desktop bundles for a v* tag and attach them to a draft release.
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  linux:
+    runs-on: ubuntu-22.04 # oldest supported glibc, so the bundles run on more distros
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install system libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          workspaces: src-tauri -> target
+
+      - run: npm ci
+
+      - uses: tauri-apps/tauri-action@1deb371b0cd8bd54025b384f1cd735e725c4060f # action-v1.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # The CLI is not in package.json (upstream owns that file), so run a pinned copy.
+          tauriScript: npx --yes @tauri-apps/cli@2.11.4
+          tagName: ${{ github.ref_name }}
+          releaseName: NapkinMath ${{ github.ref_name }}
+          releaseBody: Linux desktop build of NapkinMath. Download the .deb, .rpm or .AppImage below.
+          releaseDraft: true
+          prerelease: false
