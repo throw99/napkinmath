@@ -17,8 +17,9 @@ The Tauri CLI is not in `package.json`. Use `cargo tauri`, or `npx @tauri-apps/c
 
     cargo tauri dev
 
-This starts `npm run dev` (Vite on `http://127.0.0.1:3003`) and opens the window on it.
-Vite uses a strict port. Stop any other NapkinMath dev server on port 3003 first.
+This starts `npm run dev -- --host 127.0.0.1` (Vite on `http://127.0.0.1:3003`) and opens the window on it.
+If a NapkinMath dev server already runs on 127.0.0.1:3003, start the app with
+`cargo tauri dev --config '{"build":{"beforeDevCommand":""}}'`.
 
 ## Build
 

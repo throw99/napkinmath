@@ -4,7 +4,7 @@
   "version": "../package.json",
   "identifier": "app.napkinmath.desktop",
   "build": {
-    "beforeDevCommand": "npm run dev",
+    "beforeDevCommand": "npm run dev -- --host 127.0.0.1",
     "devUrl": "http://127.0.0.1:3003",
     "beforeBuildCommand": "npm run build",
     "frontendDist": "../dist"
