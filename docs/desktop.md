@@ -31,6 +31,8 @@ The app version comes from `package.json`. Sheets are saved in the WebKit local
 storage of the app (`~/.local/share/app.napkinmath.desktop/`). They are separate from
 the sheets in a browser.
 
+On GNOME (`XDG_CURRENT_DESKTOP` contains GNOME), the window has a native header bar with a main menu (zoom, full screen, reload, about, quit; F10 opens it). It follows the system dark or light setting. Other desktops keep the default title bar. On Linux the app sets `WEBKIT_DISABLE_DMABUF_RENDERER=1` unless you set it, to prevent a blank window on Wayland.
+
 ## Cut a release
 
 1. Merge the changes you want into `tauri`.

@@ -19,7 +19,8 @@
         "height": 760,
         "minWidth": 480,
         "minHeight": 360,
-        "resizable": true
+        "resizable": true,
+        "visible": false
       }
     ],
     "security": {
@@ -28,7 +29,11 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["deb", "appimage", "rpm"],
+    "targets": [
+      "deb",
+      "appimage",
+      "rpm"
+    ],
     "category": "Utility",
     "shortDescription": "Notepad calculator",
     "longDescription": "NapkinMath is a notepad calculator. Type plain-English math line by line and see the results next to it.",

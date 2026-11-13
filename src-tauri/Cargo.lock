@@ -1839,6 +1839,7 @@ dependencies = [
 name = "napkinmath"
 version = "0.1.0"
 dependencies = [
+ "gtk",
  "tauri",
  "tauri-build",
 ]
