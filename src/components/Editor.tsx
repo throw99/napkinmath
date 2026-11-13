@@ -15,12 +15,16 @@ type Props = {
 
 let measureCtx: CanvasRenderingContext2D | null = null;
 
-// Typing scrolls a textarea only until the caret reaches its left edge (LibreWolf 146 not even past the padding),
-// so text typed at a line start while scrolled right can stay hidden. When the caret sits in or past the left
-// padding, scroll back to the line start if the caret then fits, otherwise far enough to show it with the padding.
-function keepCaretInView(ta: HTMLTextAreaElement, paddingPx: number) {
-  if (ta.scrollLeft === 0) return;
-  const pos = ta.selectionEnd;
+// WebKit (Safari, the Tauri app on Linux) draws a textarea caret from the previous line's text bottom to this
+// line's text bottom, so with our tall lines it is a full line tall and sits above the line. There the native
+// caret is hidden and a text-height caret is drawn instead.
+const DRAW_CARET =
+  typeof navigator !== "undefined" &&
+  /AppleWebKit/.test(navigator.userAgent) &&
+  !/Chrome|Chromium|Edg/.test(navigator.userAgent);
+
+// Width of the text before the caret on its line, as the textarea lays it out.
+function caretOffsetX(ta: HTMLTextAreaElement, pos: number) {
   const lineStart = ta.value.lastIndexOf("\n", pos - 1) + 1;
   const cs = getComputedStyle(ta);
   measureCtx ??= document.createElement("canvas").getContext("2d")!;
@@ -29,7 +33,15 @@ function keepCaretInView(ta: HTMLTextAreaElement, paddingPx: number) {
   const tabSize = parseInt(cs.tabSize) || 8;
   let prefix = "";
   for (const ch of ta.value.slice(lineStart, pos)) prefix += ch === "\t" ? " ".repeat(tabSize - (prefix.length % tabSize)) : ch;
-  const caretX = paddingPx + measureCtx.measureText(prefix).width;
+  return measureCtx.measureText(prefix).width;
+}
+
+// Typing scrolls a textarea only until the caret reaches its left edge (LibreWolf 146 not even past the padding),
+// so text typed at a line start while scrolled right can stay hidden. When the caret sits in or past the left
+// padding, scroll back to the line start if the caret then fits, otherwise far enough to show it with the padding.
+function keepCaretInView(ta: HTMLTextAreaElement, paddingPx: number) {
+  if (ta.scrollLeft === 0) return;
+  const caretX = paddingPx + caretOffsetX(ta, ta.selectionEnd);
   if (caretX - ta.scrollLeft > paddingPx + 1) return;
   ta.scrollLeft = caretX + paddingPx <= ta.clientWidth ? 0 : caretX - paddingPx;
 }
@@ -60,6 +72,7 @@ export default function Editor({ text, setText }: Props) {
   const resultsScrollRef = useRef<HTMLPreElement | null>(null);
   const gutterScrollRef = useRef<HTMLPreElement | null>(null);
   const activeHighlightRef = useRef<HTMLDivElement | null>(null);
+  const caretRef = useRef<HTMLDivElement | null>(null);
   const scrollRef = useRef({ top: 0, left: 0, rafId: 0 });
   const pendingScrollRef = useRef<{ top: number; left: number } | null>(null);
 
@@ -146,6 +159,27 @@ export default function Editor({ text, setText }: Props) {
     }px)`;
   }
 
+  // The drawn caret (WebKit only): text height, centred in the caret's line, restarted solid on every move.
+  function updateCaret() {
+    const el = caretRef.current;
+    const ta = textareaRef.current;
+    if (!el || !ta) return;
+    if (document.activeElement !== ta || ta.selectionStart !== ta.selectionEnd) {
+      el.style.display = "none";
+      return;
+    }
+    const pos = ta.selectionStart;
+    const height = Math.round(parseFloat(getComputedStyle(ta).fontSize) * 1.3);
+    const x = gutterWidthPx + paddingTopPx + caretOffsetX(ta, pos) - ta.scrollLeft;
+    const y = paddingTopPx + getActiveLineIndex(ta.value, pos) * lineHeightPx + (lineHeightPx - height) / 2 - ta.scrollTop;
+    el.style.display = x < gutterWidthPx ? "none" : "block";
+    el.style.height = `${height}px`;
+    el.style.transform = `translate(${x}px, ${y}px)`;
+    el.style.animation = "none";
+    void el.offsetWidth;
+    el.style.animation = "";
+  }
+
   function applyScroll(top: number, left: number) {
     const pre = highlightRef.current;
     if (pre) {
@@ -161,6 +195,7 @@ export default function Editor({ text, setText }: Props) {
     scrollRef.current.top = top;
     scrollRef.current.left = left;
     updateActiveHighlight();
+    updateCaret();
   }
 
   function syncScroll() {
@@ -295,7 +330,10 @@ export default function Editor({ text, setText }: Props) {
             onSelect={(e) => {
               const ta = e.currentTarget;
               setActiveLine(getActiveLineIndex(ta.value, ta.selectionStart ?? 0));
+              updateCaret();
             }}
+            onFocus={updateCaret}
+            onBlur={updateCaret}
             onKeyDown={(e) => {
               const ta = e.currentTarget;
               const pos = ta.selectionStart ?? 0;
@@ -325,10 +363,19 @@ export default function Editor({ text, setText }: Props) {
               left: gutterWidthPx,
               width: `calc(100% - ${gutterWidthPx}px)`,
               scrollPaddingLeft: paddingTopPx,
-              caretColor: "var(--nm-caret)",
+              caretColor: DRAW_CARET ? "transparent" : "var(--nm-caret)",
               WebkitTextFillColor: "transparent",
             }}
           />
+
+          {DRAW_CARET && (
+            <div
+              ref={caretRef}
+              aria-hidden="true"
+              className="nm-drawn-caret pointer-events-none absolute left-0 top-0 z-30 w-px"
+              style={{ display: "none", background: "var(--nm-caret)" }}
+            />
+          )}
 
           {/* Active line highlight */}
           <div className="pointer-events-none absolute inset-0 z-0">
