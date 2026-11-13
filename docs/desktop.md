@@ -31,7 +31,7 @@ The app version comes from `package.json`. Sheets are saved in the WebKit local
 storage of the app (`~/.local/share/app.napkinmath.desktop/`). They are separate from
 the sheets in a browser.
 
-On GNOME (`XDG_CURRENT_DESKTOP` contains GNOME), the window has a native header bar with a main menu (zoom, full screen, reload, about, quit; F10 opens it). It follows the system dark or light setting. Other desktops keep the default title bar. On Linux the app sets `WEBKIT_DISABLE_DMABUF_RENDERER=1` unless you set it, to prevent a blank window on Wayland.
+On GNOME (`XDG_CURRENT_DESKTOP` contains GNOME), the window has a native header bar with a main menu (zoom, full screen, reload, about, quit; F10 opens it). It follows the system dark or light setting. Other desktops keep the default title bar. On Linux the app sets `WEBKIT_DMABUF_RENDERER_FORCE_SHM=1`, unless you set it or `WEBKIT_DISABLE_DMABUF_RENDERER`. This prevents a blank window where WebKit cannot get GPU buffers (seen with NVIDIA on Wayland) and keeps typing smooth. If the window is still blank, start the app with `WEBKIT_DISABLE_DMABUF_RENDERER=1` (slower repaints).
 
 ## Cut a release
 
