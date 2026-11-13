@@ -116,6 +116,13 @@ export default function Editor({ text, setText }: Props) {
     return evaluated.slice(0, liveLines.length);
   }, [lineEvals, liveLines.length]);
 
+  // The results shown last time. A line change rebuilds the column, so only values that changed get the
+  // fade-in; otherwise every total would fade in again each time the caret moves to another line.
+  const shownResultsRef = useRef<(string | null)[]>([]);
+  useEffect(() => {
+    shownResultsRef.current = results;
+  }, [results]);
+
   const resultsHtml = useMemo(() => {
     const lines: string[] = [];
     for (let i = 0; i < liveLines.length; i++) {
@@ -123,8 +130,9 @@ export default function Editor({ text, setText }: Props) {
       const isActive = i === activeLine;
       const color = isActive ? "var(--nm-result-active)" : "var(--nm-result-text)";
       const weight = isActive ? "500" : "400";
+      const fresh = value && value !== shownResultsRef.current[i];
       lines.push(
-        `<span style="color:${color};font-weight:${weight}" class="${value ? "nm-result-value" : ""}">${value ? escapeHtml(value) : "&nbsp;"}</span>`,
+        `<span style="color:${color};font-weight:${weight}" class="${fresh ? "nm-result-value" : ""}">${value ? escapeHtml(value) : "&nbsp;"}</span>`,
       );
     }
     return lines.join("\n");

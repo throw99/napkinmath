@@ -150,6 +150,20 @@ test("typing after tab indentation with the caret on screen leaves the scroll al
   await expectTypingAfterTabsKeepsScroll(page);
 });
 
+test("moving to another line does not fade the results in again; a changed result does", async ({ page }) => {
+  // Results that carry the fade-in animation.
+  const fading = () => page.locator(`${RESULTS} .nm-result-value`).allTextContents();
+  await expect.poll(() => resultLines(page)).toContain("$1,500.00");
+  await page.locator("textarea").click();
+  await page.keyboard.press("Control+Home");
+  await page.keyboard.press("ArrowDown");
+  await expect.poll(fading).toEqual([]);
+  await page.keyboard.press("End");
+  await page.keyboard.type("0");
+  await expect.poll(fading).toContain("$15,000.00");
+  expect(await fading()).not.toContain("$200.00");
+});
+
 test("sheets persist across reload", async ({ page }) => {
   const editor = page.locator("textarea");
   await editor.fill("saved = 42\nsaved * 2");
