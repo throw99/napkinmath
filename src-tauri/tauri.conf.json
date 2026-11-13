@@ -1,0 +1,43 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "NapkinMath",
+  "version": "../package.json",
+  "identifier": "app.napkinmath.desktop",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://127.0.0.1:3003",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "withGlobalTauri": false,
+    "windows": [
+      {
+        "label": "main",
+        "title": "NapkinMath",
+        "width": 1100,
+        "height": 760,
+        "minWidth": 480,
+        "minHeight": 360,
+        "resizable": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["deb", "appimage", "rpm"],
+    "category": "Utility",
+    "shortDescription": "Notepad calculator",
+    "longDescription": "NapkinMath is a notepad calculator. Type plain-English math line by line and see the results next to it.",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  }
+}
